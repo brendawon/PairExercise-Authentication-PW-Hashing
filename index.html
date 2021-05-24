@@ -88,6 +88,7 @@
         render() {
           const { auth } = this.state;
           const { signIn, logout } = this;
+          console.log(auth.id);
           if (!auth.id) {
             return <SignIn signIn={signIn} />;
           } else {
