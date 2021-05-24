@@ -6,6 +6,17 @@ const {
 } = require("./db");
 const path = require("path");
 
+async function requireToken(req, res, next) {
+  try {
+    const token = req.headers.authorization;
+    const user = await User.byToken(token);
+    req.user = user;
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
 
 // api auth sent w/ password; server generates JWT
@@ -18,20 +29,24 @@ app.post("/api/auth", async (req, res, next) => {
 });
 
 // sends JWT and server verifies and reponds w/ data
-app.get("/api/auth", async (req, res, next) => {
+app.get("/api/auth", requireToken, async (req, res, next) => {
   try {
-    res.send(await User.byToken(req.headers.authorization));
+    res.send(req.user);
   } catch (ex) {
     next(ex);
   }
 });
 
-app.get("/api/users/:id/notes", async (req, res, next) => {
+app.get("/api/users/:id/notes", requireToken, async (req, res, next) => {
   try {
-    const user = await User.findByPk(req.params.id, {
-      include: { model: Note },
-    });
-    res.send(user.notes);
+    if (req.user.id === Number(req.params.id)) {
+      const notes = await Note.findAll({
+        where: {
+          userId: req.user.id,
+        },
+      });
+      res.send(notes);
+    }
   } catch (ex) {
     next(ex);
   }

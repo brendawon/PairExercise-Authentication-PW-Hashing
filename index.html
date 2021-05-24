@@ -57,14 +57,17 @@
           super();
           this.state = {
             auth: {},
+            notes: [],
           };
           this.signIn = this.signIn.bind(this);
           this.logout = this.logout.bind(this);
         }
+
         logout() {
           window.localStorage.removeItem("token");
           this.setState({ auth: {} });
         }
+
         async attemptTokenLogin() {
           const token = window.localStorage.getItem("token");
           if (token) {
@@ -73,28 +76,46 @@
                 authorization: token,
               },
             });
-            this.setState({ auth: response.data });
+            // response.data.id = the user id associated with the token
+            // check the user id from JWT = req.params.id
+            const { data: notes } = await axios.get(
+              `/api/users/${response.data.id}/notes`,
+              {
+                headers: {
+                  authorization: token,
+                },
+              }
+            );
+            this.setState({ auth: response.data, notes: notes });
           }
         }
+
         componentDidMount() {
           this.attemptTokenLogin();
         }
+
         async signIn(credentials) {
           let response = await axios.post("/api/auth", credentials);
           const { token } = response.data;
           window.localStorage.setItem("token", token);
           this.attemptTokenLogin();
         }
+
         render() {
-          const { auth } = this.state;
+          const { auth, notes } = this.state;
           const { signIn, logout } = this;
-          console.log(auth.id);
           if (!auth.id) {
             return <SignIn signIn={signIn} />;
           } else {
             return (
               <div>
-                Welcome {auth.username}
+                <h1>Welcome {auth.username}</h1>
+                <h3>Here are your notes: </h3>
+                <ul>
+                  {notes.map((note) => {
+                    return <li key={note.id}>{note.text}</li>;
+                  })}
+                </ul>
                 <button onClick={logout}>Logout</button>
               </div>
             );

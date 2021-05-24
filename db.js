@@ -58,6 +58,7 @@ User.authenticate = async ({ username, password }) => {
   if (user && isValid) {
     //   generate token
     const token = jwt.sign({ userId: user.id }, SECRET_KEY);
+    // you can add {expiresIn: } with a number value as number of seconds or you can add a string "1h" for 1 hour or "1d" for 1 day
     return token;
   }
   const error = Error("bad credentials");
@@ -82,6 +83,9 @@ User.hasMany(Note);
 
 const syncAndSeed = async () => {
   await conn.sync({ force: true });
+  // force: false does not drop the table
+  // ids get jumbled up if force: true because the data is dropped and reseeded
+  // this is a problem when we tried to refresh the page after saving a file because a different user login was associated with the api/users/:id parameter we were on
   const credentials = [
     { username: "lucy", password: "lucy_pw" },
     { username: "moe", password: "moe_pw" },
